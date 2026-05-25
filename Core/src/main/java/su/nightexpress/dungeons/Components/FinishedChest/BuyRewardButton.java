@@ -14,10 +14,7 @@ import su.nightexpress.dungeons.DungeonPlugin;
 import su.nightexpress.dungeons.dungeon.DungeonManager;
 import su.nightexpress.dungeons.dungeon.game.DungeonInstance;
 import su.nightexpress.dungeons.dungeon.player.DungeonGamer;
-import su.nightexpress.dungeons.dungeon.reward.FinishChestListener;
-import su.nightexpress.dungeons.dungeon.reward.FinishChestRewardManager;
-import su.nightexpress.dungeons.dungeon.reward.RewardChestConfig;
-import su.nightexpress.dungeons.dungeon.reward.RewardManager;
+import su.nightexpress.dungeons.dungeon.reward.*;
 
 import java.util.List;
 
@@ -66,10 +63,24 @@ public class BuyRewardButton extends ComponentButton {
             return;
         }
 
+        // Check affordability first, before touching anything
+        if (!ChestPurchaseHandler.canAfford(player, rarity)) {
+            player.closeInventory();
+            player.sendMessage("§cYou cannot afford this chest! Cost: §e$" + ChestPurchaseHandler.getCost(rarity));
+            player.sendMessage("§7Your balance: §e$" + ChestPurchaseHandler.getBalance(player));
+            return;
+        }
+
         // Record purchase
         playerDungeonInstance.addBoughtChestToInstance(player.getUniqueId(), chestLocation);
 
-        player.sendMessage("§aPurchased! Rolling your rewards...");
+        // Charge
+        ChestPurchaseHandler.PurchaseResult result = ChestPurchaseHandler.tryPurchase(player, rarity);
+        if (!result.isSuccess()) {
+            player.closeInventory();
+            player.sendMessage(result.getErrorMessage());
+            return;
+        }
 
         lockPlayerChestInteraction(player, dungeonId);
 
@@ -78,7 +89,7 @@ public class BuyRewardButton extends ComponentButton {
         RewardChestConfig chestConfig   = FinishChestRewardManager.getConfig();
         List<ItemStack> rewards         = rewardManager.rollRewards(dungeonId, rarity, chestConfig);
 
-        // Populate a fresh inventory (size 54 = double chest, like Hypixel)
+        // Populate a fresh inventory
         Inventory rewardInventory = Bukkit.createInventory(null, 54, "§6§lYour Rewards");
 
         // Fill rewards starting from slot 0
@@ -91,5 +102,6 @@ public class BuyRewardButton extends ComponentButton {
         // Save and open
         FinishChestRewardManager.playersSpecificRewardInventory.put(player.getUniqueId(), rewardInventory);
         player.openInventory(rewardInventory);
+        FinishChestRewardManager.rewardChestOpenedMessage(player, rarity);
     }
 }

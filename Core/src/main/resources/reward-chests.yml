@@ -54,3 +54,12 @@ difficulty:
   hard:
     - dungeon5
     - dungeon6
+
+# ---------------------------------------------------------------
+# Cost to open a reward chest per rarity
+# ---------------------------------------------------------------
+
+chest-cost:
+  common:    250.0
+  rare:      500.0
+  legendary: 1000.0

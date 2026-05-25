@@ -153,9 +153,12 @@ public class FinishChestRewardManager {
     // Reward
     // -----------------------------------------------------------------------
     public static void onRewardChestOpened(@NotNull Player player, @NotNull String rarity, @NotNull Location location, @NotNull String dungeonId) {
+        FinishedChestRewardGui.open(player, dungeonId, rarity, location);
+    }
+
+    public static void rewardChestOpenedMessage(@NotNull Player player, @NotNull String rarity) {
         TextColor color = RARITY_COLORS.getOrDefault(rarity, TextColor.color(0xFFFFFF));
         player.sendMessage(Component.text("You opened a " + rarity + " chest!").color(color));
-        FinishedChestRewardGui.open(player, dungeonId, rarity, location);
     }
 
     // -----------------------------------------------------------------------

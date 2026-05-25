@@ -201,6 +201,10 @@ public class RewardChestConfig {
         return weights[ord][0] + weights[ord][1] + weights[ord][2];
     }
 
+    public double getChestCost(String rarity) {
+        return config.getDouble("chest-cost." + rarity.toLowerCase(), 500.0);
+    }
+
     public int getCommonWeight(@NotNull String dungeonId)    { return getCommonWeight(getDifficulty(dungeonId)); }
     public int getRareWeight(@NotNull String dungeonId)      { return getRareWeight(getDifficulty(dungeonId)); }
     public int getLegendaryWeight(@NotNull String dungeonId) { return getLegendaryWeight(getDifficulty(dungeonId)); }

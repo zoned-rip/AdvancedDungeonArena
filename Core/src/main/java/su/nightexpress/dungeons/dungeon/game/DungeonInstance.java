@@ -1645,6 +1645,10 @@
             this.chestBoughtByPlayers.put(playerUUID, chestLocation);
         }
 
+        public void removeBoughtChestFromInstance(@NotNull UUID playerUUID) {
+            this.chestBoughtByPlayers.remove(playerUUID);
+        }
+
         public boolean isChestBoughtByPlayers(@NotNull Location chestLocation) {
             return this.chestBoughtByPlayers.containsValue(chestLocation);
         }

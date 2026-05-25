@@ -91,6 +91,13 @@ public class RewardManager {
         plugin.getLogger().info("[RewardManager] Loaded " + rewardMap.size() + " rarities.");
     }
 
+
+    public void reload() {
+        rewardConfig = YamlConfiguration.loadConfiguration(rewardFile);
+        loadRewards();
+        plugin.getLogger().info("[RewardManager] Reloaded " + rewardMap.size() + " rarities.");
+    }
+
     // -----------------------------------------------------------------------
     // Save reward from player hand
     // -----------------------------------------------------------------------

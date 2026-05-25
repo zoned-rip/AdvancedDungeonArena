@@ -16,11 +16,10 @@ import su.nightexpress.dungeons.Components.FinishedChest.CloseButton;
 import su.nightexpress.dungeons.DungeonPlugin;
 import su.nightexpress.dungeons.dungeon.reward.FinishChestRewardManager;
 import su.nightexpress.dungeons.dungeon.reward.RewardChestConfig;
+import su.nightexpress.dungeons.dungeon.reward.RewardManager;
 import su.nightexpress.dungeons.gui.Utils.GUIConfigManager;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class FinishedChestRewardGui {
 
@@ -102,9 +101,10 @@ public class FinishedChestRewardGui {
         String title = (rawTitle != null) ? rawTitle.replace("&", "§") : "§aDungeon Reward Chest";
 
         Inventory gui = Bukkit.createInventory(null, SIZE, title);
+        RewardManager rewardManager = DungeonPlugin.instance.getRewardManager();
 
         StaticComponentManager.createBorder(gui, BORDER_SLOTS);
-        placeDrops(gui);
+        placeDrops(gui, rarity, rewardManager);
         placeBuyButton(gui, cfg, dungeonId, location, rarity);
         placeCloseButton(gui, cfg);
 
@@ -114,39 +114,35 @@ public class FinishedChestRewardGui {
     // -----------------------------------------------------------------------
     // Drop placement — pick a random subset and show rarity glow
     // -----------------------------------------------------------------------
-    private static void placeDrops(Inventory gui) {
+    private static void placeDrops(Inventory gui, String rarity, RewardManager rewardManager) {
+        Map<String, RewardManager.RewardEntry> rarityMap = rewardManager.getRewardMap().get(rarity.toLowerCase());
+        if (rarityMap == null || rarityMap.isEmpty()) return;
 
-        // Shuffle a copy so the preview feels fresh each open
-        List<PossibleDrop> shuffled = new ArrayList<>(List.of(POSSIBLE_DROPS));
-        Random rng = new Random();
-        java.util.Collections.shuffle(shuffled, rng);
+        List<RewardManager.RewardEntry> entries = new ArrayList<>(rarityMap.values());
+        Collections.shuffle(entries);
 
-        int limit = Math.min(shuffled.size(), DROP_SLOTS.length);
+        int maxWeight = entries.stream().mapToInt(RewardManager.RewardEntry::getWeight).max().orElse(1);
+        int limit = Math.min(entries.size(), DROP_SLOTS.length);
 
         for (int i = 0; i < limit; i++) {
-            PossibleDrop drop = shuffled.get(i);
+            RewardManager.RewardEntry entry = entries.get(i);
             int slot = DROP_SLOTS[i];
 
-            ItemStack item = new ItemStack(drop.material());
+            ItemStack item = entry.clone();
             ItemMeta meta = item.getItemMeta();
 
             if (meta != null) {
-                meta.displayName(Component.text(drop.displayName()));
+                List<Component> lore = new ArrayList<>(meta.lore() != null ? meta.lore() : List.of());
+                lore.add(Component.text(" "));
+                lore.add(Component.text("§7Drop Chance: " + formatChance(entry.getWeight(), entries)));
 
-                List<Component> lore = new ArrayList<>();
-                lore.add(Component.text(" "));
-                lore.add(Component.text(drop.description()));
-                lore.add(Component.text(" "));
-                lore.add(Component.text("§7Drop Chance: " + formatChance(drop.weight())));
-                lore.add(Component.text(" "));
-
-                if (drop.weight() <= 10) {
+                if (entry.getWeight() <= maxWeight * 0.15) {
                     lore.add(Component.text("§4§l★ LEGENDARY"));
                     meta.setEnchantmentGlintOverride(true);
-                } else if (drop.weight() <= 25) {
+                } else if (entry.getWeight() <= maxWeight * 0.35) {
                     lore.add(Component.text("§5§lEPIC"));
                     meta.setEnchantmentGlintOverride(true);
-                } else if (drop.weight() <= 50) {
+                } else if (entry.getWeight() <= maxWeight * 0.60) {
                     lore.add(Component.text("§9RARE"));
                 } else {
                     lore.add(Component.text("§7COMMON"));
@@ -167,6 +163,7 @@ public class FinishedChestRewardGui {
 
         ItemStack item = new ItemStack(Material.GOLD_BLOCK);
         ItemMeta meta = item.getItemMeta();
+        double chestCost = FinishChestRewardManager.getConfig().getChestCost(rarity);
 
         if (meta != null) {
             meta.displayName(Component.text("§6§l✦ Purchase Reward"));
@@ -175,7 +172,7 @@ public class FinishedChestRewardGui {
             lore.add(Component.text("§7Click to spend your dungeon tokens"));
             lore.add(Component.text("§7and claim your reward drops."));
             lore.add(Component.text(" "));
-            lore.add(Component.text("§eCost: §650 Dungeon Tokens"));
+            lore.add(Component.text("§eCost: §6" + chestCost + " Dungeon Tokens"));
             lore.add(Component.text(" "));
             lore.add(Component.text("§aClick to Purchase"));
             meta.lore(lore);
@@ -237,10 +234,8 @@ public class FinishedChestRewardGui {
     /**
      * Converts a raw weight (out of ~85 max) to a rough percentage string.
      */
-    private static String formatChance(int weight) {
-        // Total weight pool
-        int total = 0;
-        for (PossibleDrop d : POSSIBLE_DROPS) total += d.weight();
+    private static String formatChance(int weight, List<RewardManager.RewardEntry> pool) {
+        int total = pool.stream().mapToInt(RewardManager.RewardEntry::getWeight).sum();
         double pct = (weight / (double) total) * 100.0;
         return String.format("%.1f%%", pct);
     }

@@ -43,6 +43,7 @@
                     plugin.getGUIConfigManager().reload();
                     plugin.getOrbManager().reload();
                     FinishChestRewardManager.reload();
+                    plugin.getRewardManager().reload();
                     return true;
                 })
             );
