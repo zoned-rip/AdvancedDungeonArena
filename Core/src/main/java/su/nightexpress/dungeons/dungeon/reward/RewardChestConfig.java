@@ -13,18 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-/**
- * Loads reward-chests.yml which contains:
- *  - A weight table for each difficulty tier (common / rare / legendary)
- *  - A mapping of dungeon IDs to difficulty tiers
- *
- * Any dungeon not listed defaults to MEDIUM.
- */
 public class RewardChestConfig {
 
-    // -----------------------------------------------------------------------
-    // Difficulty
-    // -----------------------------------------------------------------------
     public enum Difficulty {
         EASY, MEDIUM, HARD;
 
@@ -39,21 +29,16 @@ public class RewardChestConfig {
 
     private static final Difficulty DEFAULT_DIFFICULTY = Difficulty.MEDIUM;
 
-    // -----------------------------------------------------------------------
-    // Fallback weights used when the yml is missing a tier
-    //   index: [0]=common  [1]=rare  [2]=legendary
-    // -----------------------------------------------------------------------
     private static final int[][] FALLBACK_WEIGHTS = {
             { 70, 25,  5 },  // EASY
             { 40, 40, 20 },  // MEDIUM
             { 15, 40, 45 },  // HARD
     };
 
-    // -----------------------------------------------------------------------
-    // State
-    // -----------------------------------------------------------------------
     private final Plugin plugin;
     private final File   file;
+
+    private FileConfiguration config;
 
     /** difficulty ordinal → { common, rare, legendary } */
     private final int[][] weights = new int[3][3];
@@ -61,14 +46,10 @@ public class RewardChestConfig {
     /** dungeonId (lower-case) → difficulty */
     private final Map<String, Difficulty> dungeonDifficulties = new HashMap<>();
 
-    // -----------------------------------------------------------------------
-    // Constructor
-    // -----------------------------------------------------------------------
     public RewardChestConfig(@NotNull Plugin plugin) {
         this.plugin = plugin;
         this.file   = new File(plugin.getDataFolder(), "reward-chests.yml");
 
-        // Pre-fill with fallbacks so weights are never zero even before load
         for (Difficulty d : Difficulty.values()) {
             weights[d.ordinal()] = FALLBACK_WEIGHTS[d.ordinal()].clone();
         }
@@ -84,21 +65,21 @@ public class RewardChestConfig {
             writeDefaults();
         }
 
-        FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        config = YamlConfiguration.loadConfiguration(file);
 
         // --- Weight table ---
         for (Difficulty d : Difficulty.values()) {
             int ord  = d.ordinal();
             String p = "weights." + d.name().toLowerCase() + ".";
-            weights[ord][0] = cfg.getInt(p + "common",    FALLBACK_WEIGHTS[ord][0]);
-            weights[ord][1] = cfg.getInt(p + "rare",      FALLBACK_WEIGHTS[ord][1]);
-            weights[ord][2] = cfg.getInt(p + "legendary", FALLBACK_WEIGHTS[ord][2]);
+            weights[ord][0] = config.getInt(p + "common",    FALLBACK_WEIGHTS[ord][0]);
+            weights[ord][1] = config.getInt(p + "rare",      FALLBACK_WEIGHTS[ord][1]);
+            weights[ord][2] = config.getInt(p + "legendary", FALLBACK_WEIGHTS[ord][2]);
         }
 
         // --- Dungeon → difficulty mapping ---
         dungeonDifficulties.clear();
         for (Difficulty d : Difficulty.values()) {
-            List<String> ids = cfg.getStringList("difficulty." + d.name().toLowerCase());
+            List<String> ids = config.getStringList("difficulty." + d.name().toLowerCase());
             for (String id : ids) {
                 dungeonDifficulties.put(id.toLowerCase(), d);
             }
@@ -108,7 +89,6 @@ public class RewardChestConfig {
     public void save() {
         FileConfiguration cfg = new YamlConfiguration();
 
-        // Weights
         for (Difficulty d : Difficulty.values()) {
             int ord  = d.ordinal();
             String p = "weights." + d.name().toLowerCase() + ".";
@@ -117,7 +97,6 @@ public class RewardChestConfig {
             cfg.set(p + "legendary", weights[ord][2]);
         }
 
-        // Dungeon mappings (inverse of the map)
         Map<Difficulty, List<String>> inverse = new HashMap<>();
         for (Difficulty d : Difficulty.values()) inverse.put(d, new ArrayList<>());
         dungeonDifficulties.forEach((id, diff) -> inverse.get(diff).add(id));
@@ -143,6 +122,13 @@ public class RewardChestConfig {
             cfg.set(p + "rare",      FALLBACK_WEIGHTS[ord][1]);
             cfg.set(p + "legendary", FALLBACK_WEIGHTS[ord][2]);
         }
+
+        cfg.set("reward-count.common.min",    2);
+        cfg.set("reward-count.common.max",    4);
+        cfg.set("reward-count.rare.min",      4);
+        cfg.set("reward-count.rare.max",      7);
+        cfg.set("reward-count.legendary.min", 6);
+        cfg.set("reward-count.legendary.max", 9);
 
         cfg.set("difficulty.easy",   List.of("dungeon1", "dungeon2"));
         cfg.set("difficulty.medium", List.of("dungeon3", "dungeon4"));
@@ -175,7 +161,6 @@ public class RewardChestConfig {
         return dungeonDifficulties.getOrDefault(dungeonId.toLowerCase(), DEFAULT_DIFFICULTY);
     }
 
-    /** @return false if difficultyName was not recognised */
     public boolean setDifficulty(@NotNull String dungeonId, @NotNull String difficultyName) {
         for (Difficulty d : Difficulty.values()) {
             if (d.name().equalsIgnoreCase(difficultyName.trim())) {
@@ -193,7 +178,20 @@ public class RewardChestConfig {
     }
 
     // -----------------------------------------------------------------------
-    // Weight helpers — by Difficulty enum
+    // Reward count
+    // -----------------------------------------------------------------------
+    public int getMinRewardCount(@NotNull String dungeonId, @NotNull String rarity) {
+        String key = "reward-count." + rarity.toLowerCase() + ".min";
+        return config.getInt(key, 2);
+    }
+
+    public int getMaxRewardCount(@NotNull String dungeonId, @NotNull String rarity) {
+        String key = "reward-count." + rarity.toLowerCase() + ".max";
+        return config.getInt(key, 4);
+    }
+
+    // -----------------------------------------------------------------------
+    // Weight helpers
     // -----------------------------------------------------------------------
     public int getCommonWeight(@NotNull Difficulty d)    { return weights[d.ordinal()][0]; }
     public int getRareWeight(@NotNull Difficulty d)      { return weights[d.ordinal()][1]; }
@@ -203,7 +201,6 @@ public class RewardChestConfig {
         return weights[ord][0] + weights[ord][1] + weights[ord][2];
     }
 
-    // Weight helpers — convenience overloads that resolve via dungeon id
     public int getCommonWeight(@NotNull String dungeonId)    { return getCommonWeight(getDifficulty(dungeonId)); }
     public int getRareWeight(@NotNull String dungeonId)      { return getRareWeight(getDifficulty(dungeonId)); }
     public int getLegendaryWeight(@NotNull String dungeonId) { return getLegendaryWeight(getDifficulty(dungeonId)); }

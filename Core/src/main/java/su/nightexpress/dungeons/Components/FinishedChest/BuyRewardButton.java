@@ -16,6 +16,10 @@ import su.nightexpress.dungeons.dungeon.game.DungeonInstance;
 import su.nightexpress.dungeons.dungeon.player.DungeonGamer;
 import su.nightexpress.dungeons.dungeon.reward.FinishChestListener;
 import su.nightexpress.dungeons.dungeon.reward.FinishChestRewardManager;
+import su.nightexpress.dungeons.dungeon.reward.RewardChestConfig;
+import su.nightexpress.dungeons.dungeon.reward.RewardManager;
+
+import java.util.List;
 
 import static su.nightexpress.dungeons.dungeon.reward.ChestLockManager.lockPlayerChestInteraction;
 
@@ -41,8 +45,9 @@ public class BuyRewardButton extends ComponentButton {
         Integer y        = pdc.get(new NamespacedKey(DungeonPlugin.instance, "chest_y"),    PersistentDataType.INTEGER);
         Integer z        = pdc.get(new NamespacedKey(DungeonPlugin.instance, "chest_z"),    PersistentDataType.INTEGER);
         String worldName = pdc.get(new NamespacedKey(DungeonPlugin.instance, "chest_world"), PersistentDataType.STRING);
+        String rarity    = pdc.get(new NamespacedKey(DungeonPlugin.instance, "chest_rarity"), PersistentDataType.STRING);
 
-        if (dungeonId == null || x == null || y == null || z == null || worldName == null) return;
+        if (dungeonId == null || x == null || y == null || z == null || worldName == null || rarity == null) return;
 
         Location chestLocation = new Location(Bukkit.getWorld(worldName), x, y, z);
 
@@ -55,30 +60,36 @@ public class BuyRewardButton extends ComponentButton {
         if (playerDungeonInstance == null) return;
 
         // Double-check at click time — another player may have bought it
-        // while this player had the GUI open
         if (playerDungeonInstance.isChestBoughtByPlayers(chestLocation)) {
             player.closeInventory();
             player.sendMessage("§cSomeone else already purchased this chest!");
             return;
         }
 
-        // Check if chest already bought
-        if (playerDungeonInstance.isChestBoughtByPlayers(chestLocation)) {
-            player.sendMessage("You already bought this chest.");
-            return;
-        }
-
         // Record purchase
         playerDungeonInstance.addBoughtChestToInstance(player.getUniqueId(), chestLocation);
 
-        player.sendMessage("MINUS MONEY!");
+        player.sendMessage("§aPurchased! Rolling your rewards...");
 
         lockPlayerChestInteraction(player, dungeonId);
 
-        // Auto-open the saved inventory right after purchase
-        Inventory savedInventory = FinishChestRewardManager.playersSpecificRewardInventory.get(player.getUniqueId());
-        if (savedInventory != null) {
-            player.openInventory(savedInventory);
+        // Roll rewards
+        RewardManager rewardManager     = DungeonPlugin.instance.getRewardManager();
+        RewardChestConfig chestConfig   = FinishChestRewardManager.getConfig();
+        List<ItemStack> rewards         = rewardManager.rollRewards(dungeonId, rarity, chestConfig);
+
+        // Populate a fresh inventory (size 54 = double chest, like Hypixel)
+        Inventory rewardInventory = Bukkit.createInventory(null, 54, "§6§lYour Rewards");
+
+        // Fill rewards starting from slot 0
+        int slot = 0;
+        for (ItemStack reward : rewards) {
+            if (slot >= rewardInventory.getSize()) break;
+            rewardInventory.setItem(slot++, reward);
         }
+
+        // Save and open
+        FinishChestRewardManager.playersSpecificRewardInventory.put(player.getUniqueId(), rewardInventory);
+        player.openInventory(rewardInventory);
     }
 }

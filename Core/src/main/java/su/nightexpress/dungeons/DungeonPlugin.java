@@ -25,6 +25,7 @@ import su.nightexpress.dungeons.dungeon.reward.FinishChestListener;
 import su.nightexpress.dungeons.dungeon.listener.OrbListener;
 import su.nightexpress.dungeons.dungeon.player.SoloManager;
 import su.nightexpress.dungeons.dungeon.reward.FinishChestRewardManager;
+import su.nightexpress.dungeons.dungeon.reward.RewardManager;
 import su.nightexpress.dungeons.dungeon.scale.ScaleBaseRegistry;
 import su.nightexpress.dungeons.dungeon.script.action.ActionRegistry;
 import su.nightexpress.dungeons.dungeon.script.condition.ConditionRegistry;
@@ -75,6 +76,7 @@ public class DungeonPlugin extends NightPlugin {
     private ClassManager classManager;
     private SimilarDungeonManager similarDungeonManager;
     private OrbManager orbManager;
+    private RewardManager rewardManager;
 
     public static DungeonPlugin instance;
 
@@ -132,6 +134,8 @@ public class DungeonPlugin extends NightPlugin {
         this.guiConfigManager = new GUIConfigManager(this);
 
         this.similarDungeonManager = new SimilarDungeonManager(this);
+
+        this.rewardManager =  new RewardManager(this);
 
         File classFile = new File(getDataFolder(), "class.yml");
 
@@ -331,6 +335,8 @@ public class DungeonPlugin extends NightPlugin {
     public OrbManager getOrbManager() {
         return orbManager;
     }
+
+    public RewardManager getRewardManager() { return rewardManager; }
 
     @NotNull
     public SimilarDungeonManager getSimilarDungeonManager() {

@@ -287,6 +287,18 @@
                     )
                     .executes((context, args) -> giveOrb(plugin, context, args))
             );
+
+
+            root.branch(Commands.literal("savereward")
+                    .playerOnly()
+                    .permission("dungeons.command.reward.admin")
+                    .withArguments(
+                            Arguments.string("rarity"),
+                            Arguments.string("name"),
+                            Arguments.integer("weight").optional()
+                    )
+                    .executes((context, arguments) -> saveReward(plugin, context, arguments))
+            );
         }
     
         private static boolean getWand(@NotNull DungeonPlugin plugin, @NotNull CommandContext context, @NotNull ParsedArguments arguments) {
@@ -1065,6 +1077,17 @@
             plugin.getOrbManager().giveOrbs(target, className);
             context.getSender().sendMessage("§aGave §f" + className + " §aorbs to §f" + target.getName() + "§a.");
             target.sendMessage("§aYou received orbs for class §e" + className + "§a.");
+            return true;
+        }
+
+        private static boolean saveReward(@NotNull DungeonPlugin plugin, @NotNull CommandContext context, @NotNull ParsedArguments arguments) {
+            Player player = context.getPlayerOrThrow();
+
+            String rarity = arguments.getString("rarity");
+            String name   = arguments.getString("name");
+            int weight    = arguments.contains("weight") ? arguments.getInt("weight") : 10;
+
+            plugin.getRewardManager().saveReward(player, rarity, name, weight);
             return true;
         }
     

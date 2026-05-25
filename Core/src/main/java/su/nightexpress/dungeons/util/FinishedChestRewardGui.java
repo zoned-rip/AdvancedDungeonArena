@@ -105,7 +105,7 @@ public class FinishedChestRewardGui {
 
         StaticComponentManager.createBorder(gui, BORDER_SLOTS);
         placeDrops(gui);
-        placeBuyButton(gui, cfg, dungeonId, location);
+        placeBuyButton(gui, cfg, dungeonId, location, rarity);
         placeCloseButton(gui, cfg);
 
         player.openInventory(gui);
@@ -163,7 +163,7 @@ public class FinishedChestRewardGui {
     // -----------------------------------------------------------------------
     // Buy button (slot 48)
     // -----------------------------------------------------------------------
-    private static void placeBuyButton(Inventory gui, GUIConfigManager cfg, String dungeonId, Location location) {
+    private static void placeBuyButton(Inventory gui, GUIConfigManager cfg, String dungeonId, Location location, String rarity) {
 
         ItemStack item = new ItemStack(Material.GOLD_BLOCK);
         ItemMeta meta = item.getItemMeta();
@@ -193,12 +193,16 @@ public class FinishedChestRewardGui {
             NamespacedKey locYKey   = new NamespacedKey(DungeonPlugin.instance, "chest_y");
             NamespacedKey locZKey   = new NamespacedKey(DungeonPlugin.instance, "chest_z");
             NamespacedKey locWKey   = new NamespacedKey(DungeonPlugin.instance, "chest_world");
+            NamespacedKey rarityKey   = new NamespacedKey(DungeonPlugin.instance, "chest_rarity");
+
 
             meta.getPersistentDataContainer().set(dungeonKey, PersistentDataType.STRING, dungeonId);
             meta.getPersistentDataContainer().set(locXKey,    PersistentDataType.INTEGER, location.getBlockX());
             meta.getPersistentDataContainer().set(locYKey,    PersistentDataType.INTEGER, location.getBlockY());
             meta.getPersistentDataContainer().set(locZKey,    PersistentDataType.INTEGER, location.getBlockZ());
             meta.getPersistentDataContainer().set(locWKey,    PersistentDataType.STRING,  location.getWorld().getName());
+            meta.getPersistentDataContainer().set(rarityKey,   PersistentDataType.STRING,  rarity);
+
 
             item.setItemMeta(meta);
         }

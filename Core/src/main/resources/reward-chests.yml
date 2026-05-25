@@ -2,19 +2,6 @@
 #  Reward Chest Config  —  reward-chests.yml
 # ============================================================
 
-# Rarity weight tables per difficulty tier.
-#
-# Each chest rolls one rarity independently using the weights
-# of the difficulty assigned to that dungeon.
-#
-# Higher weight = more likely. Values are relative — they do
-# not need to sum to 100.
-#
-#   Example (hard):  common=15, rare=40, legendary=45  → total 100
-#     COMMON     15/100 = 15%
-#     RARE       40/100 = 40%
-#     LEGENDARY  45/100 = 45%
-
 weights:
 
   easy:
@@ -31,10 +18,27 @@ weights:
     common:    30
     rare:      45
     legendary: 25
+
+# ---------------------------------------------------------------
+# How many items to roll per rarity per chest
+# ---------------------------------------------------------------
+
+reward-count:
+
+  common:
+    min: 2
+    max: 4
+
+  rare:
+    min: 4
+    max: 7
+
+  legendary:
+    min: 6
+    max: 9
+
 # ---------------------------------------------------------------
 # Assign dungeons to a difficulty tier.
-# Dungeon IDs are case-insensitive.
-# Any dungeon not listed here defaults to: medium
 # ---------------------------------------------------------------
 
 difficulty:
