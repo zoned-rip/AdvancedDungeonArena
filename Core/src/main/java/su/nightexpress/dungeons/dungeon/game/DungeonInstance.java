@@ -318,10 +318,6 @@
                         Players.getOnline().forEach(player -> {
                             if (this.plugin.getDungeonManager().isPlaying(player)) return;
                             if (!this.hasPermission(player)) return;
-
-                            Lang.DUNGEON_ANNOUNCE_START.message().send(player, replacer -> replacer
-                                    .replace(this.replacePlaceholders())
-                                    .replace(Placeholders.GENERIC_TIME, this.countdown));
                         });
                     }
                 }
