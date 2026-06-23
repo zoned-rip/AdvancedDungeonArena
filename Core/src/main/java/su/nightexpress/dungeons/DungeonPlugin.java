@@ -55,8 +55,12 @@ import su.nightexpress.nightcore.util.Plugins;
 import su.nightexpress.dungeons.kit.OrbManager;
 
 import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DungeonPlugin extends NightPlugin {
+
+    private static final Pattern MINECRAFT_VERSION_PATTERN = Pattern.compile("\\(MC: ([^)]+)\\)");
 
     private DataHandler dataHandler;
     private UserManager userManager;
@@ -214,24 +218,40 @@ public class DungeonPlugin extends NightPlugin {
 
     private boolean loadInternals() {
         String bukkitVersion = this.getServer().getBukkitVersion();
-        if (!this.isSupportedServerVersion(bukkitVersion)) {
-            this.error("Unsupported server version: " + bukkitVersion);
-            this.getPluginManager().disablePlugin(this);
-            return false;
+        String minecraftVersion = this.resolveMinecraftVersion();
+        if (!this.isSupportedServerVersion(minecraftVersion)) {
+            this.warn("Unrecognized server version '" + bukkitVersion + "' (detected Minecraft version: '" + minecraftVersion + "'). Trying bundled internals anyway.");
         }
 
         this.internals = this.loadVersionedInternals();
         if (this.internals == null) {
-            this.warn("Version-specific NMS module not found, using Paper fallback internals.");
+            this.warn("Version-specific NMS module unavailable, using Paper fallback internals.");
             this.internals = new PaperDungeonNMS();
         }
 
         return true;
     }
 
-    private boolean isSupportedServerVersion(@NotNull String bukkitVersion) {
-        String minecraftVersion = bukkitVersion.split("-")[0];
+    private boolean isSupportedServerVersion(@NotNull String minecraftVersion) {
         return minecraftVersion.equals("1.21") || minecraftVersion.startsWith("1.21.");
+    }
+
+    @NotNull
+    private String resolveMinecraftVersion() {
+        String minecraftVersion = this.getServer().getMinecraftVersion();
+        if (!minecraftVersion.isBlank()) {
+            return minecraftVersion.trim();
+        }
+
+        String serverVersion = this.getServer().getVersion();
+        Matcher matcher = MINECRAFT_VERSION_PATTERN.matcher(serverVersion);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+
+        String bukkitVersion = this.getServer().getBukkitVersion();
+        String rawVersion = bukkitVersion.split("-")[0].trim();
+        return rawVersion.isEmpty() ? "unknown" : rawVersion;
     }
 
     @Nullable
